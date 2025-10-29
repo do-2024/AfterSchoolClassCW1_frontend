@@ -14,8 +14,23 @@
 </template>
 
 
-<script> export default { 
-name: 'LessonList',
- props: ['lessons'] 
- } 
- </script>
+<script>
+export default {
+  name: 'LessonList',
+  props: {
+    lessons: {
+      type: Array,
+      required: true,
+      validator: function(value) {
+        return value.every(lesson => {
+          return typeof lesson.id !== 'undefined' &&
+                 typeof lesson.subject === 'string' &&
+                 typeof lesson.location === 'string' &&
+                 typeof lesson.price === 'number' &&
+                 typeof lesson.spaces === 'number'
+        })
+      }
+    }
+  }
+}
+</script>

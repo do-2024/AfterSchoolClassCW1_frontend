@@ -9,11 +9,13 @@
   </div>
 </template>
 
-<script> 
+<script>
 export default {
-   name: 'SearchBar',
-    data() {
- return { query: '' } 
- } 
- } 
- </script>
+  name: 'SearchBar',
+  data() {
+    return {
+      query: ''
+    }
+  }
+}
+</script>
