@@ -14,3 +14,10 @@ LessonList:                                                                     
 </template>
 
 
+<script>
+export default {
+  name: 'LessonList',
+  props: ['lessons']
+}
+</script>
+
