@@ -20,3 +20,17 @@
 </template>
 
 
+<script>
+import Checkout from './Checkout.vue'
+
+export default {
+  name: 'Cart',
+  components: { Checkout },
+  props: ['cart'],
+  computed: {
+    total() {
+      return this.cart.reduce((sum, i) => sum + i.price * i.qty, 0)
+    }
+  }
+}
+</script>
