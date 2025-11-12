@@ -1,0 +1,36 @@
+<template>
+  <div class="lesson-grid">
+    <div v-for="lesson in lessons" :key="lesson.id" class="lesson-card">
+      <i :class="lesson.icon" class="icon"></i>
+      <h3>{{ lesson.subject }}</h3>
+      <p>{{ lesson.location }}</p>
+      <p>Price: £{{ lesson.price }}</p>
+      <p>Spaces: {{ lesson.spaces }}</p>
+      <button :disabled="lesson.spaces===0" @click="$emit('add-to-cart', lesson.id)">
+        Add to Cart
+      </button>
+    </div>
+  </div>
+</template>
+
+
+<script>
+export default {
+  name: 'LessonList',
+  props: {
+    lessons: {
+      type: Array,
+      required: true,
+      validator: function(value) {
+        return value.every(lesson => {
+          return typeof lesson.id !== 'undefined' &&
+                 typeof lesson.subject === 'string' &&
+                 typeof lesson.location === 'string' &&
+                 typeof lesson.price === 'number' &&
+                 typeof lesson.spaces === 'number'
+        })
+      }
+    }
+  }
+}
+</script>
