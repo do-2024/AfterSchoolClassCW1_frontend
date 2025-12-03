@@ -4,18 +4,21 @@
       type="text"
       placeholder="Search lessons..."
       v-model="query"
-      @input="$emit('search', query)"
+      @input="emitSearch"
     />
   </div>
 </template>
 
 <script>
 export default {
-  name: 'SearchBar',
+  name: "SearchBar",
   data() {
-    return {
-      query: ''
-    }
-  }
-}
+    return { query: "" };
+  },
+  methods: {
+    emitSearch() {
+      this.$emit("search", this.query);
+    },
+  },
+};
 </script>

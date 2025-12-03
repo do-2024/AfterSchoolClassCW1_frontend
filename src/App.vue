@@ -2,105 +2,181 @@
   <div class="app-container">
     <header>
       <h1>After School Classes</h1>
-      <div class="buttons">
-        <button @click="toggleCart">{{ showCart ? 'Back to Lessons' : 'View Cart (' + cart.length + ')' }}</button>
-        <button @click="reset">Reset</button>
-      </div>
+
+      <button @click="toggleCart">
+        {{ showCart ? "Back to Lessons" : `View Cart (${cart.length})` }}
+      </button>
     </header>
 
+    <!-- CART VIEW -->
     <div v-if="showCart">
-      <Cart :cart="cart" @remove="removeFromCart" @checkout-success="onCheckoutSuccess" />
+      <h2>Your Cart</h2>
+
+      <p v-if="cart.length === 0">Cart is empty</p>
+
+      <div v-for="item in cart" :key="item._id" class="lesson-card">
+        <h3>{{ item.topic }}</h3>
+        <p>Quantity: {{ item.qty }}</p>
+        <p>£{{ item.price * item.qty }}</p>
+
+        <button @click="removeFromCart(item._id)">Remove</button>
+      </div>
+
+      <h3>Total: £{{ total }}</h3>
+
+      <div>
+        <input v-model="order.name" placeholder="Your Name" />
+        <input v-model="order.phone" placeholder="Phone Number" />
+
+        <button @click="checkout" :disabled="cart.length === 0">
+          Checkout
+        </button>
+      </div>
     </div>
 
+    <!-- LESSONS VIEW -->
     <div v-else>
-      <SearchBar @search="searchQuery = $event" />
-      <SortControls :sort-by="sortBy" :order-asc="orderAsc" @updateSort="updateSort" />
-      <LessonList :lessons="filteredLessons" @add-to-cart="addToCart" />
+      <input
+        v-model="searchQuery"
+        placeholder="Search lessons"
+      />
+
+      <div>
+        <div
+          class="lesson-card"
+          v-for="lesson in filteredLessons"
+          :key="lesson._id"
+        >
+          <img
+            :src="`http://localhost:3000/images/${lesson.image}`"
+            width="170"
+          />
+
+          <h3>{{ lesson.topic }}</h3>
+          <p>Location: {{ lesson.location }}</p>
+          <p>Price: £{{ lesson.price }}</p>
+          <p>Spaces left: {{ lesson.space }}</p>
+
+          <button
+            :disabled="lesson.space === 0"
+            @click="addToCart(lesson)"
+          >
+            Add to Cart
+          </button>
+        </div>
+      </div>
     </div>
+
   </div>
 </template>
 
-
 <script>
-import LessonList from './components/LessonList.vue'
-import SortControls from './components/SortControls.vue'
-import SearchBar from './components/SearchBar.vue'
-import Cart from './components/Cart.vue'
-
 export default {
-  components: { LessonList, SortControls, SearchBar, Cart },
   data() {
     return {
-      lessons: [
-        { id: 1, subject: 'Math', location: 'Hendon', price: 100, spaces: 5, icon: 'fa-solid fa-square-root-variable' },
-        { id: 2, subject: 'Science', location: 'Colindale', price: 80, spaces: 5, icon: 'fa-solid fa-flask' },
-        { id: 3, subject: 'English', location: 'Brent Cross', price: 90, spaces: 5, icon: 'fa-solid fa-book' },
-        { id: 4, subject: 'Art', location: 'Hendon', price: 70, spaces: 5, icon: 'fa-solid fa-palette' },
-        { id: 5, subject: 'Music', location: 'Colindale', price: 85, spaces: 5, icon: 'fa-solid fa-music' },
-        { id: 6, subject: 'Dance', location: 'Mill Hill', price: 60, spaces: 5, icon: 'fa-solid fa-person-running' },
-        { id: 7, subject: 'History', location: 'Hendon', price: 75, spaces: 5, icon: 'fa-solid fa-landmark' },
-        { id: 8, subject: 'Drama', location: 'Brent Cross', price: 80, spaces: 5, icon: 'fa-solid fa-theater-masks' },
-        { id: 9, subject: 'Computing', location: 'Mill Hill', price: 110, spaces: 5, icon: 'fa-solid fa-computer' },
-        { id: 10, subject: 'Physics', location: 'Hendon', price: 120, spaces: 5, icon: 'fa-solid fa-atom' }
-      ],
-      sortBy: 'subject',
-      orderAsc: true,
-      searchQuery: '',
+      lessons: [],
       cart: [],
-      showCart: false
-    }
+      showCart: false,
+      searchQuery: "",
+      order: {
+        name: "",
+        phone: ""
+      }
+    };
   },
+
   computed: {
     filteredLessons() {
-      let result = this.lessons.filter(l =>
-        l.subject.toLowerCase().includes(this.searchQuery.toLowerCase())
-      )
-      result.sort((a, b) => {
-        const fieldA = a[this.sortBy]
-        const fieldB = b[this.sortBy]
-        if (fieldA < fieldB) return this.orderAsc ? -1 : 1
-        if (fieldA > fieldB) return this.orderAsc ? 1 : -1
-        return 0
-      })
-      return result
+      return this.lessons.filter((l) =>
+        l.topic.toLowerCase().includes(this.searchQuery.toLowerCase())
+      );
+    },
+
+    total() {
+      return this.cart.reduce(
+        (sum, item) => sum + item.price * item.qty,
+        0
+      );
     }
   },
+
+  async created() {
+    await this.loadLessons();
+  },
+
   methods: {
-    updateSort({ sortBy, orderAsc }) {
-      this.sortBy = sortBy
-      this.orderAsc = orderAsc
-    },
-    addToCart(id) {
-      const lesson = this.lessons.find(l => l.id === id)
-      if (lesson && lesson.spaces > 0) {
-        lesson.spaces--
-        const existing = this.cart.find(i => i.id === id)
-        if (existing) existing.qty++
-        else this.cart.push({ ...lesson, qty: 1 })
+    async loadLessons() {
+      try {
+        const res = await fetch("http://localhost:3000/lessons");
+        this.lessons = await res.json();
+      } catch (err) {
+        console.error("FETCH ERROR:", err);
       }
     },
-    removeFromCart(id) {
-      const index = this.cart.findIndex(i => i.id === id)
-      if (index > -1) {
-        const lesson = this.lessons.find(l => l.id === id)
-        lesson.spaces += this.cart[index].qty
-        this.cart.splice(index, 1)
-      }
-    },
+
     toggleCart() {
-      this.showCart = !this.showCart
+      this.showCart = !this.showCart;
     },
-    onCheckoutSuccess() {
-      alert('Checkout complete!')
-      this.cart = []
-      this.showCart = false
+
+    addToCart(lesson) {
+      if (lesson.space === 0) return;
+
+      lesson.space--;
+
+      const found = this.cart.find(i => i._id === lesson._id);
+
+      if (found) {
+        found.qty++;
+      } else {
+        this.cart.push({ ...lesson, qty: 1 });
+      }
     },
-    reset() {
-      this.lessons.forEach(l => (l.spaces = 5))
-      this.cart = []
-      this.showCart = false
+
+    removeFromCart(id) {
+      const index = this.cart.findIndex(i => i._id === id);
+      if (index === -1) return;
+
+      const lesson = this.lessons.find(l => l._id === id);
+      lesson.space += this.cart[index].qty;
+
+      this.cart.splice(index, 1);
+    },
+
+    async checkout() {
+      if (!this.order.name || !this.order.phone) {
+        alert("Enter name and phone");
+        return;
+      }
+
+      const payload = {
+        name: this.order.name,
+        phone: this.order.phone,
+        items: this.cart.map(item => ({
+          lessonId: item._id,
+          qty: item.qty
+        }))
+      };
+
+      try {
+        await fetch("http://localhost:3000/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        alert("Order placed successfully!");
+
+        this.cart = [];
+        this.order.name = "";
+        this.order.phone = "";
+        this.showCart = false;
+
+        await this.loadLessons();
+
+      } catch (err) {
+        alert("Checkout failed");
+      }
     }
   }
-}
+};
 </script>
-
